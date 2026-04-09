@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/gtsitsiridis/protadjust/actions/workflows/ci.yml/badge.svg)](https://github.com/gtsitsiridis/protadjust/actions/workflows/ci.yml)
 [![Docker](https://github.com/gtsitsiridis/protadjust/actions/workflows/docker.yml/badge.svg)](https://github.com/gtsitsiridis/protadjust/actions/workflows/docker.yml)
+[![Image](https://ghcr-badge.egpl.dev/gtsitsiridis/protadjust/latest_tag?label=ghcr)](https://github.com/gtsitsiridis/protadjust/pkgs/container/protadjust)
 [![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -56,13 +57,24 @@ Use `-v` / `-vv` for INFO / DEBUG logging.
 
 ## Docker
 
+Images are published to the [GitHub Container Registry](https://github.com/gtsitsiridis/protadjust/pkgs/container/protadjust) on each release.
+
 ```bash
-docker build -t protadjust .
+# pull
+docker pull ghcr.io/gtsitsiridis/protadjust:latest
+
+# run
 mkdir -p output/
 docker run \
   -v $PWD/sample_data:/data/input:ro \
   -v $PWD/output:/data/output \
-  protadjust rint /data/input/random_proteomics.parquet /data/output/
+  ghcr.io/gtsitsiridis/protadjust:latest rint /data/input/random_proteomics.parquet /data/output/
+```
+
+Or build locally:
+
+```bash
+docker build -t protadjust .
 ```
 
 ## Development
