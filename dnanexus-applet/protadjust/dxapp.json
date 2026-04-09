@@ -1,0 +1,172 @@
+{
+  "name": "protadjust",
+  "title": "ProtAdjust — Protein Abundance Adjustment",
+  "summary": "Adjust protein abundance using z-score, RINT, OLS regression, per-protein regression, or Protrider outlier detection.",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "inputSpec": [
+    {
+      "name": "method",
+      "label": "Adjustment method",
+      "class": "string",
+      "optional": false,
+      "choices": ["z-score", "rint", "regression", "protein-regression", "protrider"],
+      "help": "Adjustment method to apply."
+    },
+    {
+      "name": "input_parquet",
+      "label": "Input proteomics parquet",
+      "class": "file",
+      "optional": false,
+      "patterns": ["*.parquet"],
+      "help": "Parquet file with samples as rows and proteins as columns."
+    },
+    {
+      "name": "index_col",
+      "label": "Sample identifier column",
+      "class": "string",
+      "optional": true,
+      "default": "sample",
+      "help": "Name of the sample identifier column in the input parquet (default: sample)."
+    },
+    {
+      "name": "covariates_parquet",
+      "label": "Covariates parquet (regression only)",
+      "class": "file",
+      "optional": true,
+      "patterns": ["*.parquet"],
+      "help": "Parquet file of covariates (samples x covariates). Required for regression."
+    },
+    {
+      "name": "covariate_index_col",
+      "label": "Covariate sample identifier column",
+      "class": "string",
+      "optional": true,
+      "default": "eid",
+      "help": "Sample identifier column in the covariates parquet (default: eid)."
+    },
+    {
+      "name": "n_pcs",
+      "label": "Proteomics PCs to include as covariates (regression only)",
+      "class": "int",
+      "optional": true,
+      "help": "Number of proteomics PCs to add as extra covariates in regression."
+    },
+    {
+      "name": "protein_covariates_parquet",
+      "label": "Per-protein covariates parquet (protein-regression only)",
+      "class": "file",
+      "optional": true,
+      "patterns": ["*.parquet"],
+      "help": "Parquet file of per-protein covariates, e.g. PRS scores (samples x proteins). Required for protein-regression."
+    },
+    {
+      "name": "pval_dist",
+      "label": "P-value distribution (protrider only)",
+      "class": "string",
+      "optional": true,
+      "default": "t",
+      "choices": ["t", "t-raw", "normal"],
+      "help": "t: fit t-distribution and transform z-scores to N(0,1) (default). t-raw: return raw t z-scores. normal: fit normal distribution."
+    },
+    {
+      "name": "max_nas",
+      "label": "Max missing value fraction (protrider only)",
+      "class": "float",
+      "optional": true,
+      "default": 0.3,
+      "help": "Proteins with a higher fraction of missing values are dropped before the autoencoder runs (default: 0.3)."
+    },
+    {
+      "name": "no_autoencoder_training",
+      "label": "Skip autoencoder training (protrider only)",
+      "class": "boolean",
+      "optional": true,
+      "default": false,
+      "help": "Skip autoencoder training and use PCA initialisation only."
+    },
+    {
+      "name": "n_layers",
+      "label": "Autoencoder hidden layers (protrider only)",
+      "class": "int",
+      "optional": true,
+      "default": 1,
+      "help": "Number of hidden layers in the autoencoder (default: 1)."
+    },
+    {
+      "name": "n_epochs",
+      "label": "Training epochs (protrider only)",
+      "class": "int",
+      "optional": true,
+      "default": 1000,
+      "help": "Maximum number of autoencoder training epochs (default: 1000)."
+    },
+    {
+      "name": "lr",
+      "label": "Learning rate (protrider only)",
+      "class": "float",
+      "optional": true,
+      "default": 0.001,
+      "help": "Learning rate for autoencoder training (default: 0.001)."
+    },
+    {
+      "name": "find_q_method",
+      "label": "Latent dimension method (protrider only)",
+      "class": "string",
+      "optional": true,
+      "default": "OHT",
+      "help": "Method used to determine the latent dimension (default: OHT)."
+    },
+    {
+      "name": "no_init_pca",
+      "label": "Disable PCA initialisation (protrider only)",
+      "class": "boolean",
+      "optional": true,
+      "default": false,
+      "help": "Disable PCA initialisation of autoencoder weights."
+    },
+    {
+      "name": "common_degrees_freedom",
+      "label": "Common degrees of freedom (protrider only)",
+      "class": "boolean",
+      "optional": true,
+      "default": false,
+      "help": "Fit a single degrees-of-freedom parameter shared across all proteins."
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "output_parquet",
+      "label": "Adjusted proteomics parquet",
+      "class": "file",
+      "patterns": ["*.parquet"],
+      "help": "Adjusted protein abundance values."
+    }
+  ],
+  "runSpec": {
+    "timeoutPolicy": {
+      "*": {
+        "hours": 3
+      }
+    },
+    "interpreter": "bash",
+    "file": "src/protadjust.sh",
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0"
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "regionalOptions": {
+    "aws:eu-west-2": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem1_ssd1_v2_x16"
+        }
+      }
+    }
+  }
+}
