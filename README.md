@@ -1,6 +1,6 @@
 # protadjust
 
-Protein intensity adjustment tool for Olink/UK Biobank proteomics data.
+Protein abundance adjustment tool.
 
 ## Methods
 
@@ -41,6 +41,8 @@ protadjust protein-regression input.parquet output/ \
 
 protadjust protrider input.parquet output/
 ```
+
+The `protrider` command accepts a `--log-func` option for the log-transformation applied to raw intensities before the autoencoder runs. For already log-transformed data (e.g. NPX values from UK Biobank), leave it at the default (`None`, no transform). For mass spectrometry data (e.g. iBAQ), specify a transform such as `--log-func log`.
 
 Input parquet: rows = samples, columns = proteins (plus a sample identifier column, default `sample`).
 Output: `output/adjusted_proteomics.parquet`.
