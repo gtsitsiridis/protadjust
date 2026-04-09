@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Test CLI help
+        run: |
+          uv run protadjust --help
+          uv run protadjust z-score --help
+          uv run protadjust rint --help
+          uv run protadjust regression --help
+          uv run protadjust protein-regression --help
+          uv run protadjust protrider --help
+
+      - name: Test CLI z-score and rint
+        run: |
+          python - <<'EOF'
+          import pandas as pd
+          import numpy as np
+
+          np.random.seed(0)
+          n_samples, n_proteins = 30, 10
+          data = np.random.randn(n_samples, n_proteins)
+          df = pd.DataFrame(data, columns=[f'protein_{i}' for i in range(n_proteins)])
+          df.insert(0, 'sample', [f's_{i}' for i in range(n_samples)])
+          df.to_parquet('/tmp/test_prot.parquet', index=False)
+          EOF
+
+          uv run protadjust z-score /tmp/test_prot.parquet /tmp/out_zscore/
+          test -f /tmp/out_zscore/adjusted_proteomics.parquet
+
+          uv run protadjust rint /tmp/test_prot.parquet /tmp/out_rint/
+          test -f /tmp/out_rint/adjusted_proteomics.parquet
+
+      - name: Test CLI protrider (without extra — expect ImportError)
+        run: |
+          uv run protadjust protrider /tmp/test_prot.parquet /tmp/out_protrider/ 2>&1 \
+            | grep -q "protrider is not installed" \
+            && echo "Got expected error message" \
+            || (echo "Unexpected output — missing error message" && exit 1)

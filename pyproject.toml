@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "protadjust"
+version = "0.1.0"
+description = "Protein intensity adjustment tool."
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [
+    { name = "George Tsitsiridis", email = "g.tsitsiridis@tum.de" },
+]
+keywords = ["proteomics", "olink", "normalization", "adjustment"]
+dependencies = [
+    "click>=8.1.0",
+    "fastparquet>=2024.2.0",
+    "joblib>=1.4.0",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "polars>=0.20.0",
+    "scipy>=1.13.0",
+    "statsmodels>=0.14.0",
+    "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+protrider = [
+    "protrider<2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov",
+]
+
+[project.scripts]
+protadjust = "protadjust.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
