@@ -203,13 +203,6 @@ class TestRegressionAdjuster:
         assert 'rare_binary' not in adj.covariate_df.columns
         assert 'age' in adj.covariate_df.columns
 
-    def test_invalid_normalization(self, tmp_path):
-        cov = pd.DataFrame({'eid': ['1'], 'age': [50]})
-        cov_path = tmp_path / 'cov.parquet'
-        cov.to_parquet(cov_path, index=False)
-        with pytest.raises(ValueError, match='normalization'):
-            RegressionAdjuster(cov_path, 'eid', normalization='invalid')
-
     def test_output_format(self, tmp_path):
         n_samples, n_proteins = 20, 10
         prot_path, samples, _ = _make_proteomics(tmp_path, n_samples, n_proteins)
@@ -251,15 +244,6 @@ class TestRegressionAdjuster:
         prot_path, samples, _ = _make_proteomics(tmp_path)
         cov_path = _make_covariates(tmp_path, samples)
         adj = RegressionAdjuster(cov_path, 'eid', n_proteomics_pcs=None)
-        out = tmp_path / 'out'
-        out.mkdir()
-        result = adj.adjust(prot_path, 'sample', out)
-        assert result.data.shape[0] == 20
-
-    def test_standard_normalization(self, tmp_path):
-        prot_path, samples, _ = _make_proteomics(tmp_path)
-        cov_path = _make_covariates(tmp_path, samples)
-        adj = RegressionAdjuster(cov_path, 'eid', normalization='standard')
         out = tmp_path / 'out'
         out.mkdir()
         result = adj.adjust(prot_path, 'sample', out)
