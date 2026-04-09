@@ -1,5 +1,10 @@
 # protadjust
 
+[![CI](https://github.com/gtsitsiridis/protadjust/actions/workflows/ci.yml/badge.svg)](https://github.com/gtsitsiridis/protadjust/actions/workflows/ci.yml)
+[![Docker](https://github.com/gtsitsiridis/protadjust/actions/workflows/docker.yml/badge.svg)](https://github.com/gtsitsiridis/protadjust/actions/workflows/docker.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Protein abundance adjustment tool.
 
 ## Methods
@@ -8,7 +13,7 @@ Protein abundance adjustment tool.
 |---|---|
 | `z-score` | Z-score standardisation per protein |
 | `rint` | Rank-based inverse normal transformation (RINT) |
-| `regression` | Three-step covariate regression (normalise → OLS → normalise) |
+| `regression` | OLS covariate regression (returns residuals) |
 | `protein-regression` | Per-protein regression against a gene-specific covariate (e.g. PRS) |
 | `protrider` | Autoencoder-based outlier detection via [Protrider](https://github.com/gagneurlab/PROTRIDER) |
 

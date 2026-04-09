@@ -1,6 +1,6 @@
 from pathlib import Path
 import logging
-from typing import Literal, Protocol
+from typing import Protocol
 
 import pandas as pd
 import numpy as np
@@ -79,22 +79,17 @@ class RINTAdjuster:
 
 
 class RegressionAdjuster:
-    """Three-step covariate regression adjustment.
+    """OLS covariate regression adjustment.
 
-    Steps (following Sun et al. 2023 / Dhindsa et al. 2024):
-    1. Normalise raw intensities (RINT or z-score).
-    2. Regress out covariates (and optionally proteomics PCs) via OLS.
-    3. Normalise residuals again.
-
-    Binary covariates with fewer than 10 samples in either group are removed
-    automatically. Constant covariates are also removed.
+    Regresses out covariates (and optionally proteomics PCs) via OLS and
+    returns the residuals. Binary covariates with fewer than 10 samples in
+    either group are removed automatically. Constant covariates are also removed.
 
     Args:
         covariate_path: Parquet file of covariates (samples x covariates).
         covariate_index_col: Sample identifier column in the covariate file.
         n_proteomics_pcs: Number of proteomics PCs to add as extra covariates.
         n_jobs: Parallel workers for per-protein operations.
-        normalization: 'rint' (default) or 'standard' (z-score).
     """
 
     def __init__(
@@ -103,7 +98,6 @@ class RegressionAdjuster:
         covariate_index_col: str,
         n_proteomics_pcs: int = None,
         n_jobs: int = 4,
-        normalization: Literal['rint', 'standard'] = 'rint',
     ):
         cov_df = pd.read_parquet(covariate_path, engine='fastparquet', index=False)
         cov_df[covariate_index_col] = cov_df[covariate_index_col].astype(str)
@@ -121,12 +115,8 @@ class RegressionAdjuster:
         self.n_proteomics_pcs = n_proteomics_pcs
         self.n_jobs = n_jobs
 
-        if normalization not in ('rint', 'standard'):
-            raise ValueError("normalization must be 'rint' or 'standard'")
-        self.normalization = normalization
-
     def adjust(self, proteomics_path: Path, index_col: str, output_dir: Path) -> ProteomicsDataset:
-        """Run the three-step regression adjustment.
+        """Regress out covariates via OLS and return residuals.
 
         Args:
             proteomics_path: Path to input parquet (samples x proteins).
@@ -134,7 +124,7 @@ class RegressionAdjuster:
             output_dir: Per-protein regression stats are saved here.
 
         Returns:
-            ProteomicsDataset with regression-adjusted values.
+            ProteomicsDataset with OLS residuals.
         """
         df = pd.read_parquet(proteomics_path, engine='fastparquet', index=False)
         df[index_col] = df[index_col].astype(str)
@@ -157,29 +147,20 @@ class RegressionAdjuster:
         df = df.loc[common]
         cov_df = cov_df.loc[common]
 
-        norm = self.normalization
-        logger.info("Step 1: %s on raw data", 'RINT' if norm == 'rint' else 'z-score')
-        corrected = utils.rank_INT_matrix(df, n_jobs=self.n_jobs) if norm == 'rint' \
-            else utils.standardize_matrix(df, n_jobs=self.n_jobs)
-
-        logger.info("Step 2: Regressing out covariates")
-        corrected = utils.regress_out_covariates_matrix(corrected, cov_df, n_jobs=self.n_jobs,
+        logger.info("Regressing out covariates")
+        corrected = utils.regress_out_covariates_matrix(df, cov_df, n_jobs=self.n_jobs,
                                                         output_dir=output_dir)
-
-        logger.info("Step 3: %s on residuals", 'RINT' if norm == 'rint' else 'z-score')
-        corrected = utils.rank_INT_matrix(corrected, n_jobs=self.n_jobs) if norm == 'rint' \
-            else utils.standardize_matrix(corrected, n_jobs=self.n_jobs)
 
         return ProteomicsDataset(data=corrected.values, sample_ids=corrected.index.tolist(),
                                  protein_ids=corrected.columns.tolist())
 
 
 class ProteinRegressionAdjuster:
-    """Per-protein regression against a matching gene-specific covariate (e.g. PRS).
+    """Per-protein OLS regression against a matching gene-specific covariate (e.g. PRS).
 
     For each protein, a covariate column with the same name is looked up in
     *protein_covariate_path*. Proteins without a matching column are skipped.
-    Residuals are z-score standardised before returning.
+    Returns OLS residuals.
 
     Args:
         protein_covariate_path: Parquet file of per-protein covariates.
@@ -255,7 +236,6 @@ class ProteinRegressionAdjuster:
 
         logger.info("Proteins adjusted: %d | skipped: %d", n_with, n_without)
         result = pd.concat(adjusted_proteins, axis=1)
-        result = utils.standardize_matrix(result, n_jobs=self.n_jobs)
 
         return ProteomicsDataset(data=result.values, sample_ids=result.index.tolist(),
                                  protein_ids=result.columns.tolist())

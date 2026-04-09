@@ -119,25 +119,19 @@ def rint(input_path: Path, output_dir: Path, index_col: str):
     help='Sample identifier column in the covariate file.')
 @click.option('--n-pcs', type=int, default=None,
               help='Number of proteomics PCs to include as extra covariates.')
-@click.option('--normalization', type=click.Choice(['rint', 'standard']), default='rint',
-              show_default=True, help='Normalisation applied before and after regression.')
 def regression(input_path: Path, output_dir: Path, covariate_path: Path,
-               covariate_index_col: str, n_pcs: int, normalization: str,
+               covariate_index_col: str, n_pcs: int,
                index_col: str, n_jobs: int):
-    """Three-step covariate regression adjustment.
+    """OLS covariate regression adjustment.
 
-    1. Normalise raw intensities (RINT or z-score).
-    2. Regress out covariates via OLS (optionally including proteomics PCs).
-    3. Normalise residuals again.
-
-    Per-protein regression statistics are saved to OUTPUT_DIR. Covariates with
-    low variability or insufficient group sizes are filtered automatically.
+    Regresses out covariates via OLS and returns residuals. Per-protein
+    regression statistics are saved to OUTPUT_DIR. Covariates with low
+    variability or insufficient group sizes are filtered automatically.
     """
     adjuster = RegressionAdjuster(
         covariate_path=covariate_path,
         covariate_index_col=covariate_index_col,
         n_proteomics_pcs=n_pcs,
-        normalization=normalization,
         n_jobs=n_jobs,
     )
     _run(adjuster, input_path, output_dir, index_col)
@@ -164,8 +158,8 @@ def protein_regression(input_path: Path, output_dir: Path, protein_covariate_pat
 
     For each protein, looks up a covariate column with the same name in
     PROTEIN_COVARIATE_PATH (e.g. polygenic risk scores). Proteins without a
-    matching column or with fewer than 10 valid samples are skipped. Residuals
-    are z-score standardised before returning.
+    matching column or with fewer than 10 valid samples are skipped. Returns
+    OLS residuals.
     """
     adjuster = ProteinRegressionAdjuster(
         protein_covariate_path=protein_covariate_path,
