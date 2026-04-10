@@ -49,5 +49,5 @@ class ProteomicsDataset:
             index_col: Column name to use for the sample index
         """
         df = pd.DataFrame(self.data, index=self.sample_ids, columns=self.protein_ids)
-        df.index.name = index_col
-        df.to_parquet(path, index=True)
+        df.reset_index(inplace=True, names=index_col)
+        df.to_parquet(path, index=False)
